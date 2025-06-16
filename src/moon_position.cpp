@@ -11,6 +11,8 @@
 #include <utility>
 #include <iomanip>
 #include <sstream>
+#include <wx/wx.h> // Include wxWidgets header
+
 using json = nlohmann::json;
 
 std::string militaryToStandard(const ln_zonedate time) {
@@ -104,14 +106,66 @@ private:
     }
 };
 
-int main() {
-    
+// --- wxWidgets GUI Implementation ---
+
+// 1. Define your Application class
+class MyApp : public wxApp
+{
+public:
+    virtual bool OnInit();
+};
+
+// 2. Define your Main Frame class
+class MyFrame : public wxFrame
+{
+public:
+    MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size);
+
+private:
+    // Pointers to wxStaticText controls
+    wxStaticText* m_phaseText;
+    wxStaticText* m_illuminationText;
+    wxStaticText* m_moonriseText;
+    wxStaticText* m_moonsetText;
+};
+
+// 3. Implement OnInit for your Application
+wxIMPLEMENT_APP(MyApp);
+
+bool MyApp::OnInit()
+{
+    MyFrame *frame = new MyFrame("Moon Info", wxPoint(50, 50), wxSize(300, 200));
+    frame->Show(true);
+    return true;
+}
+
+// 4. Implement the Constructor for your Main Frame
+MyFrame::MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size)
+    : wxFrame(NULL, wxID_ANY, title, pos, size)
+{
+    // Create a panel to hold the controls
+    wxPanel* panel = new wxPanel(this, wxID_ANY);
+
+    // Use a sizer for automatic layout
+    wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+
+    // Get moon information
     MoonInfo moon;
 
-    std::cout << "Phase: " << moon.phase << std::endl;
-    std::cout << "Illumination: " << moon.illumination << std::endl;
-    std::cout << "Moonrise: " << moon.riseTimeString << std::endl;
-    std::cout << "Moonset: " << moon.setTimeString << std::endl;
+    // Create wxStaticText controls and add them to the sizer
+    m_phaseText = new wxStaticText(panel, wxID_ANY, "Phase: " + moon.phase);
+    sizer->Add(m_phaseText, 0, wxALL | wxEXPAND, 5); // 0 for not stretchable, wxALL for padding, wxEXPAND to fill width
 
-    return 0;
+    m_illuminationText = new wxStaticText(panel, wxID_ANY, "Illumination: " + moon.illumination + "%");
+    sizer->Add(m_illuminationText, 0, wxALL | wxEXPAND, 5);
+
+    m_moonriseText = new wxStaticText(panel, wxID_ANY, "Moonrise: " + moon.riseTimeString);
+    sizer->Add(m_moonriseText, 0, wxALL | wxEXPAND, 5);
+
+    m_moonsetText = new wxStaticText(panel, wxID_ANY, "Moonset: " + moon.setTimeString);
+    sizer->Add(m_moonsetText, 0, wxALL | wxEXPAND, 5);
+
+    // Set the sizer for the panel
+    panel->SetSizer(sizer);
+    sizer->Fit(this); // Adjust frame size to fit content
 }

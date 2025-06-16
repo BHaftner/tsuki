@@ -12,6 +12,7 @@ add_compile_definitions(CPPHTTPLIB_OPENSSL_SUPPORT)
 
 find_package(Libnova QUIET)
 find_package(OpenSSL REQUIRED)
+find_package(wxWidgets COMPONENTS core base gl REQUIRED)
 
 if(Libnova_FOUND)
     message(STATUS "Found Libnova via find_package. Using its definitions.")
@@ -39,6 +40,7 @@ else()
 endif()
 
 add_executable(lunrSight src/moon_position.cpp)
-target_include_directories(lunrSight PRIVATE ${LIBNOVA_INCLUDE_DIR})
-target_link_libraries(lunrSight PRIVATE ${LIBNOVA_LIBRARY} OpenSSL::SSL OpenSSL::Crypto)
+target_compile_definitions(lunrSight PRIVATE ${wxWidgets_DEFINITIONS})
+target_include_directories(lunrSight PRIVATE ${LIBNOVA_INCLUDE_DIR} ${wxWidgets_INCLUDE_DIRS})
+target_link_libraries(lunrSight PRIVATE ${LIBNOVA_LIBRARY} OpenSSL::SSL OpenSSL::Crypto ${wxWidgets_LIBRARIES})
 target_compile_options(lunrSight PRIVATE -Wall -Wextra -Wpedantic -g)
