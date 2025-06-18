@@ -39,6 +39,8 @@ else()
     endif()
 endif()
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}")
+
 add_executable(tsuki src/tsuki.cpp)
 target_compile_definitions(tsuki PRIVATE ${wxWidgets_DEFINITIONS})
 target_include_directories(tsuki PRIVATE ${LIBNOVA_INCLUDE_DIR} ${wxWidgets_INCLUDE_DIRS})

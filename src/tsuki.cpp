@@ -201,14 +201,14 @@ void MyFrame::LoadAssets() {
     };
     
     wxImage bgImage;
-    if (bgImage.LoadFile("../assets/background.png", wxBITMAP_TYPE_PNG)) {
+    if (bgImage.LoadFile("assets/background.png", wxBITMAP_TYPE_PNG)) {
         m_bitmaps["background"] = wxBitmap(bgImage);
     } else {
         wxLogError("Failed to load image: background.png");
     }
 
-    loadAndScaleBitmap("exit", "../assets/exit.png", AppConfig::EXIT_BUTTON_WIDTH, AppConfig::EXIT_BUTTON_HEIGHT);
-    loadAndScaleBitmap("exit_hover", "../assets/exit_hover.png", AppConfig::EXIT_BUTTON_WIDTH, AppConfig::EXIT_BUTTON_HEIGHT);
+    loadAndScaleBitmap("exit", "assets/exit.png", AppConfig::EXIT_BUTTON_WIDTH, AppConfig::EXIT_BUTTON_HEIGHT);
+    loadAndScaleBitmap("exit_hover", "assets/exit_hover.png", AppConfig::EXIT_BUTTON_WIDTH, AppConfig::EXIT_BUTTON_HEIGHT);
 
     auto loadMoonBitmap = [&](const std::string& phaseName, const wxString& path) {
         wxImage image;
@@ -219,13 +219,13 @@ void MyFrame::LoadAssets() {
         }
     };
     
-    loadMoonBitmap("First Quarter", "../assets/first_quarter.png");
-    loadMoonBitmap("Full", "../assets/full_moon.png");
-    loadMoonBitmap("Last Quarter", "../assets/last_quarter.png");
-    loadMoonBitmap("Waning Crescent", "../assets/waning_crescent.png");
-    loadMoonBitmap("Waxing Crescent", "../assets/waxing_crescent.png");
-    loadMoonBitmap("Waning Gibbous", "../assets/waning_gibbous.png");
-    loadMoonBitmap("Waxing Gibbous", "../assets/waxing_gibbous.png");
+    loadMoonBitmap("First Quarter", "assets/first_quarter.png");
+    loadMoonBitmap("Full", "assets/full_moon.png");
+    loadMoonBitmap("Last Quarter", "assets/last_quarter.png");
+    loadMoonBitmap("Waning Crescent", "assets/waning_crescent.png");
+    loadMoonBitmap("Waxing Crescent", "assets/waxing_crescent.png");
+    loadMoonBitmap("Waning Gibbous", "assets/waning_gibbous.png");
+    loadMoonBitmap("Waxing Gibbous", "assets/waxing_gibbous.png");
 }
 
 void MyFrame::PrepareBackground() {
@@ -246,7 +246,7 @@ void MyFrame::SetupUI() {
 
 void MyFrame::SetupFont() {
     constexpr int FONT_SIZE = 20;
-    if (m_pixelFont.AddPrivateFont("../assets/PixelPurl.ttf")) {
+    if (m_pixelFont.AddPrivateFont("assets/PixelPurl.ttf")) {
         m_pixelFont.SetFaceName("PixelPurl");
         m_pixelFont.SetPointSize(FromDIP(FONT_SIZE));
     } else {
@@ -291,7 +291,7 @@ void MyFrame::SetupStarAnimation() {
                                               FromDIP(wxPoint(AppConfig::STAR_AREA_X, AppConfig::STAR_AREA_Y)),
                                               FromDIP(wxSize(AppConfig::STAR_AREA_WIDTH, AppConfig::STAR_AREA_HEIGHT)));
     wxAnimation animation;
-    if (animation.LoadFile("../assets/stars.gif", wxANIMATION_TYPE_GIF)) {
+    if (animation.LoadFile("assets/stars.gif", wxANIMATION_TYPE_GIF)) {
         starAnimation->SetAnimation(animation);
         starAnimation->Play();
     } else {
