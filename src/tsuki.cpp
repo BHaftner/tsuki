@@ -1,49 +1,111 @@
 #include <iostream>
 #include <string>
-#include <map>
 #include <sstream>
 #include <iomanip>
 #include <utility>
+#include <optional>
+#include <vector>
+#include <map>
 
+#include "SFML/Graphics/Color.hpp"
+#include "SFML/Graphics/Font.hpp"
+#include "SFML/Graphics/Text.hpp"
+#include "SFML/Graphics/Texture.hpp"
+#include "SFML/System/Vector2.hpp"
+#include "SFML/Window/Mouse.hpp"
 #include "httplib.h"
 #include "json.hpp"
 #include <libnova/julian_day.h>
 #include <libnova/ln_types.h>
 #include <libnova/lunar.h>
 #include <libnova/rise_set.h>
-
-#include <wx/wx.h>
-#include <wx/animate.h>
-#include <wx/bitmap.h>
-#include <wx/dcclient.h>
-#include <wx/image.h>
-#include <wx/imagpng.h>
-#include <wx/timer.h>
-#include <wx/statbmp.h>
+#include "imgui.h"
+#include "imgui-SFML.h"
+#include <SFML/Graphics.hpp>
+#include <SFML/Window.hpp>
 
 using json = nlohmann::json;
 
-namespace AppConfig
-{
+class FrameAnimator : public sf::Drawable {
+public:
+    explicit FrameAnimator(sf::Time frameDuration) : m_frameDuration(frameDuration) {}
+
+    bool loadFromFiles(const std::vector<std::string>& filenames) {
+        m_textures.reserve(filenames.size());
+        for (const auto& filename : filenames) {
+            sf::Texture texture;
+            if (!texture.loadFromFile(filename)) {
+                std::cerr << "Failed to load animation frame: " << filename << std::endl;
+                m_textures.clear();
+                return false;
+            }
+            m_textures.push_back(std::move(texture));
+        }
+
+        if (!m_textures.empty()) {
+            m_sprite.emplace(m_textures[0]);
+            m_frameClock.restart();
+            return true;
+        }
+        return false;
+    }
+
+    void setPosition(float x, float y) {
+        if (m_sprite) {
+            m_sprite->setPosition({x, y});
+        }
+    }
+
+    void setSize(float width, float height) {
+        if (!m_sprite || m_textures.empty()) return;
+        
+        const sf::Vector2u originalSize = m_textures[0].getSize();
+        if (originalSize.x == 0 || originalSize.y == 0) return;
+        
+        float scaleX = width / static_cast<float>(originalSize.x);
+        float scaleY = height / static_cast<float>(originalSize.y);
+        m_sprite->setScale({scaleX, scaleY});
+    }
+
+    void update() {
+        if (!m_sprite || m_textures.size() <= 1) return;
+
+        if (m_frameClock.getElapsedTime() >= m_frameDuration) {
+            m_currentFrame = (m_currentFrame + 1) % m_textures.size();
+            m_sprite->setTexture(m_textures[m_currentFrame]);
+            m_frameClock.restart();
+        }
+    }
+
+private:
+    void draw(sf::RenderTarget& target, sf::RenderStates states) const override {
+        if (m_sprite) {
+            target.draw(*m_sprite, states);
+        }
+    }
+
+    std::optional<sf::Sprite>  m_sprite;
+    std::vector<sf::Texture>   m_textures;
+    size_t                     m_currentFrame = 0;
+    sf::Time                   m_frameDuration;
+    sf::Clock                  m_frameClock;
+};
+
+
+namespace AppConfig {
     constexpr int FRAME_WIDTH = 400;
     constexpr int FRAME_HEIGHT = 600;
-
+    constexpr int DRAG_AREA_HEIGHT = 60;
     constexpr int EXIT_BUTTON_X = 328;
     constexpr int EXIT_BUTTON_Y = 0;
-    constexpr int EXIT_BUTTON_WIDTH = 72;
-    constexpr int EXIT_BUTTON_HEIGHT = 77;
-
-    constexpr int INFO_PANEL_X = 12;
-    constexpr int INFO_PANEL_Y = 433;
-    constexpr int INFO_PANEL_WIDTH = 375;
-    constexpr int INFO_PANEL_HEIGHT = 155;
-
     constexpr int STAR_AREA_X = 12;
     constexpr int STAR_AREA_Y = 77;
     constexpr int STAR_AREA_WIDTH = 376;
     constexpr int STAR_AREA_HEIGHT = 344;
-
-    constexpr int DRAG_AREA_HEIGHT = 60;
+    constexpr int INFO_PANEL_X = 12;
+    constexpr int INFO_PANEL_Y = 433;
+    constexpr int INFO_PANEL_WIDTH = 375;
+    constexpr int INFO_PANEL_HEIGHT = 155;
 }
 
 std::string militaryToStandard(const ln_zonedate& time) {
@@ -85,7 +147,7 @@ private:
                 json data = json::parse(res->body);
                 return {data["lon"].get<double>(), data["lat"].get<double>()};
             } catch (const json::exception& e) {
-                wxLogError("JSON parsing failed: %s", e.what());
+                std::cerr << "JSON parsing failed: " << e.what() << std::endl;
             }
         }
         return {0.0, 0.0};
@@ -130,252 +192,130 @@ private:
     }
 };
 
-class MyFrame : public wxFrame {
-public:
-    MyFrame(const wxString& title);
-    ~MyFrame() override;
+int main() {
+    sf::RenderWindow window(sf::VideoMode({AppConfig::FRAME_WIDTH, AppConfig::FRAME_HEIGHT}), "MoonInformation", sf::Style::None);
+    window.setFramerateLimit(60);
 
-private:
-    void OnPaint(wxPaintEvent& event);
-    void OnDragBegin(wxMouseEvent& event);
-    void OnDragMove(wxMouseEvent& event);
-    void OnDragEnd(wxMouseEvent& event);
-    void OnCloseButton(wxCommandEvent& event);
+    ImGui::SFML::Init(window);
 
-    void LoadAssets();
-    void PrepareBackground();
-    void SetupUI();
-    void SetupFont();
-    void SetupMoonInfoPanel(const MoonInfo& info);
-    void SetupStarAnimation();
-    void SetupMoonImage(const MoonInfo& info);
-    void SetupCustomChrome();
-
-    wxPoint m_dragStartPos;
-    std::map<wxString, wxBitmap> m_bitmaps;
-    std::map<std::string, wxBitmap> m_moonPhaseBitmaps;
-    wxBitmap m_scaledBackground;
-    wxFont m_pixelFont;
-};
-
-class MyApp : public wxApp {
-public:
-    bool OnInit() override;
-};
-
-wxIMPLEMENT_APP(MyApp);
-
-bool MyApp::OnInit() {
-    wxInitAllImageHandlers();
-    auto* frame = new MyFrame("Moon Info");
-    frame->Show(true);
-    return true;
-}
-
-MyFrame::MyFrame(const wxString& title)
-    : wxFrame(nullptr, wxID_ANY, title, wxDefaultPosition,
-              wxSize(AppConfig::FRAME_WIDTH, AppConfig::FRAME_HEIGHT),
-              wxFRAME_NO_TASKBAR | wxNO_BORDER)
-{
-    SetSize(FromDIP(wxSize(AppConfig::FRAME_WIDTH, AppConfig::FRAME_HEIGHT)));
-    SetMinClientSize(FromDIP(wxSize(AppConfig::FRAME_WIDTH, AppConfig::FRAME_HEIGHT)));
-
-    LoadAssets();
-    PrepareBackground();
-    SetupUI();
-    Bind(wxEVT_PAINT, &MyFrame::OnPaint, this);
-}
-
-MyFrame::~MyFrame() {
-    if (HasCapture()) {
-        ReleaseMouse();
+    sf::Texture backgroundTexture;
+    if (!backgroundTexture.loadFromFile("assets/background.png")) {
+        std::cerr << "Error: Could not load background image from assets/background.png" << std::endl;
+        return -1;
     }
-}
+    sf::Sprite backgroundSprite(backgroundTexture);
 
-void MyFrame::LoadAssets() {
-    auto loadAndScaleBitmap = [&](const wxString& name, const wxString& path, int width, int height) {
-        wxImage image;
-        if (image.LoadFile(path, wxBITMAP_TYPE_PNG)) {
-            image.Scale(FromDIP(width), FromDIP(height), wxIMAGE_QUALITY_NEAREST);
-            m_bitmaps[name] = wxBitmap(image);
-        } else {
-            wxLogError("Failed to load image: %s", path);
-        }
+    sf::Texture exitTexture, exitHoverTexture;
+    if (!exitTexture.loadFromFile("assets/exit.png") ||
+        !exitHoverTexture.loadFromFile("assets/exit_hover.png")) {
+        std::cerr << "Error: Could not load exit button images\n";
+        return -1;
+    }
+
+    sf::Sprite exitSprite(exitTexture);
+    exitSprite.setPosition({AppConfig::EXIT_BUTTON_X, AppConfig::EXIT_BUTTON_Y});
+
+    FrameAnimator starAnimation(sf::seconds(0.5));
+    std::vector<std::string> starFiles;
+    for (int i = 1; i <= 6; ++i) {
+        starFiles.push_back("assets/stars" + std::to_string(i) + ".png");
+    }
+
+    if (!starAnimation.loadFromFiles(starFiles)) {
+        std::cerr << "Error: Could not load star animation frames." << std::endl;
+        return -1;
+    }
+    starAnimation.setPosition(AppConfig::STAR_AREA_X, AppConfig::STAR_AREA_Y);
+    starAnimation.setSize(AppConfig::STAR_AREA_WIDTH, AppConfig::STAR_AREA_HEIGHT);
+
+    MoonInfo moonInfo;
+
+    const std::map<std::string, std::string> phaseToFilename = {
+        {"New",             "assets/new_moon.png"},
+        {"Waxing Crescent", "assets/waxing_crescent.png"},
+        {"First Quarter",   "assets/first_quarter.png"},
+        {"Waxing Gibbous",  "assets/waxing_gibbous.png"},
+        {"Full",            "assets/full_moon.png"},
+        {"Waning Gibbous",  "assets/waning_gibbous.png"},
+        {"Last Quarter",    "assets/last_quarter.png"},
+        {"Waning Crescent", "assets/waning_crescent.png"}
     };
-    
-    wxImage bgImage;
-    if (bgImage.LoadFile("assets/background.png", wxBITMAP_TYPE_PNG)) {
-        m_bitmaps["background"] = wxBitmap(bgImage);
+
+    sf::Texture moonTexture;
+
+    auto it = phaseToFilename.find(moonInfo.phase);
+    std::string moonImageFile;
+    if (it != phaseToFilename.end()) {
+        moonImageFile = it->second;
     } else {
-        wxLogError("Failed to load image: background.png");
+        std::cerr << "Warning: Could not find image for phase: " << moonInfo.phase << ". Defaulting to new moon." << std::endl;
+        moonImageFile = "assets/new_moon.png"; 
     }
 
-    loadAndScaleBitmap("exit", "assets/exit.png", AppConfig::EXIT_BUTTON_WIDTH, AppConfig::EXIT_BUTTON_HEIGHT);
-    loadAndScaleBitmap("exit_hover", "assets/exit_hover.png", AppConfig::EXIT_BUTTON_WIDTH, AppConfig::EXIT_BUTTON_HEIGHT);
+    if (!moonTexture.loadFromFile(moonImageFile)) {
+        std::cerr << "Error: Could not load moon image from " << moonImageFile << std::endl;
+        return -1;
+    }
+    sf::Sprite moonSprite(moonTexture);
+    moonSprite.setTexture(moonTexture);
 
-    auto loadMoonBitmap = [&](const std::string& phaseName, const wxString& path) {
-        wxImage image;
-        if (image.LoadFile(path, wxBITMAP_TYPE_PNG)) {
-            m_moonPhaseBitmaps[phaseName] = wxBitmap(image);
-        } else {
-            wxLogError("Failed to load moon image: %s", path);
+    sf::FloatRect moonBounds = moonSprite.getLocalBounds();
+    moonSprite.setOrigin({moonBounds.size.x / 2.f, moonBounds.size.y / 2.f});
+    moonSprite.setPosition({
+        AppConfig::STAR_AREA_X + (AppConfig::STAR_AREA_WIDTH / 2.f),
+        AppConfig::STAR_AREA_Y + (AppConfig::STAR_AREA_HEIGHT / 2.f)
+    });
+
+    sf::Font font;
+    if (!font.openFromFile("assets/PixelPurl.ttf")) {
+        std::cout << "Failed to load font.";
+    }
+    
+    sf::Text text(font);
+    text.setString(
+        "  Illumination: " + moonInfo.illumination + "%\n" +
+        "Phase: " + moonInfo.phase + "\n" +
+        "   Moonrise: " + moonInfo.riseTimeString + "\n" +
+        "   Moonset: " + moonInfo.setTimeString);
+    text.setCharacterSize(35);
+    text.setFillColor(sf::Color::Yellow);
+    text.setPosition({AppConfig::INFO_PANEL_X + 65, AppConfig::INFO_PANEL_Y + 5});
+
+    sf::Clock deltaClock;
+
+    while (window.isOpen()) {
+        while (const std::optional<sf::Event> event = window.pollEvent()) {
+            ImGui::SFML::ProcessEvent(window, *event);
+
+            if (event->is<sf::Event::Closed>()) {
+                window.close();
+            }
         }
-    };
+
+        sf::Vector2f mouseWorld = window.mapPixelToCoords(sf::Mouse::getPosition(window));
+
+        bool mouseOverExit = exitSprite.getGlobalBounds().contains(mouseWorld);
+        exitSprite.setTexture(mouseOverExit ? exitHoverTexture : exitTexture);
+        if (mouseOverExit && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
+            window.close();
+        }
     
-    loadMoonBitmap("First Quarter", "assets/first_quarter.png");
-    loadMoonBitmap("Full", "assets/full_moon.png");
-    loadMoonBitmap("Last Quarter", "assets/last_quarter.png");
-    loadMoonBitmap("Waning Crescent", "assets/waning_crescent.png");
-    loadMoonBitmap("Waxing Crescent", "assets/waxing_crescent.png");
-    loadMoonBitmap("Waning Gibbous", "assets/waning_gibbous.png");
-    loadMoonBitmap("Waxing Gibbous", "assets/waxing_gibbous.png");
-}
+        ImGui::SFML::Update(window, deltaClock.restart());
+        starAnimation.update(); 
 
-void MyFrame::PrepareBackground() {
-    if (m_bitmaps.count("background")) {
-        wxImage tempImage = m_bitmaps["background"].ConvertToImage();
-        m_scaledBackground = wxBitmap(tempImage);
-    }
-}
+        window.clear();
+        
+        window.draw(backgroundSprite);
+        window.draw(exitSprite);
+        window.draw(starAnimation);
 
-void MyFrame::SetupUI() {
-    SetupFont();
-    const MoonInfo moonInfo;
-    SetupMoonInfoPanel(moonInfo);
-    SetupStarAnimation();
-    SetupMoonImage(moonInfo);
-    SetupCustomChrome();
-}
+        window.draw(moonSprite);
+        window.draw(text);
 
-void MyFrame::SetupFont() {
-    constexpr int FONT_SIZE = 20;
-    if (m_pixelFont.AddPrivateFont("assets/PixelPurl.ttf")) {
-        m_pixelFont.SetFaceName("PixelPurl");
-        m_pixelFont.SetPointSize(FromDIP(FONT_SIZE));
-    } else {
-        wxLogError("Failed to load custom font! Falling back to default.");
-        m_pixelFont = wxFont(wxFontInfo(FromDIP(FONT_SIZE)).Bold());
-    }
-}
-
-void MyFrame::SetupMoonInfoPanel(const MoonInfo& info) {
-    // FIX: Pass the transparency style directly to the constructor
-    auto* panel = new wxPanel(this, wxID_ANY,
-                              FromDIP(wxPoint(AppConfig::INFO_PANEL_X, AppConfig::INFO_PANEL_Y)),
-                              FromDIP(wxSize(AppConfig::INFO_PANEL_WIDTH, AppConfig::INFO_PANEL_HEIGHT)),
-                              wxTAB_TRAVERSAL | wxBG_STYLE_TRANSPARENT);
-
-    const long textStyle = wxST_NO_AUTORESIZE | wxBG_STYLE_TRANSPARENT;
-    wxStaticText* illuminationText = new wxStaticText(panel, wxID_ANY, "Illumination: " + info.illumination + "%", wxDefaultPosition, wxDefaultSize, textStyle);
-    wxStaticText* phaseText = new wxStaticText(panel, wxID_ANY, "Phase: " + info.phase, wxDefaultPosition, wxDefaultSize, textStyle);
-    wxStaticText* moonriseText = new wxStaticText(panel, wxID_ANY, "Moonrise: " + info.riseTimeString, wxDefaultPosition, wxDefaultSize, textStyle);
-    wxStaticText* moonsetText = new wxStaticText(panel, wxID_ANY, "Moonset: " + info.setTimeString, wxDefaultPosition, wxDefaultSize, textStyle);
-
-    for (auto* textCtrl : {illuminationText, phaseText, moonriseText, moonsetText}) {
-        textCtrl->SetFont(m_pixelFont);
-        textCtrl->SetForegroundColour(*wxYELLOW);
+        ImGui::SFML::Render(window);
+        window.display();
     }
 
-    auto* contentSizer = new wxBoxSizer(wxVERTICAL);
-    const int verticalGap = FromDIP(8);
-    contentSizer->Add(illuminationText, 0, wxALIGN_CENTER_HORIZONTAL | wxBOTTOM, verticalGap);
-    contentSizer->Add(phaseText, 0, wxALIGN_CENTER_HORIZONTAL | wxBOTTOM, verticalGap);
-    contentSizer->Add(moonriseText, 0, wxALIGN_CENTER_HORIZONTAL | wxBOTTOM, verticalGap);
-    contentSizer->Add(moonsetText, 0, wxALIGN_CENTER_HORIZONTAL);
-
-    auto* panelSizer = new wxBoxSizer(wxVERTICAL);
-    panelSizer->AddStretchSpacer(1);
-    panelSizer->Add(contentSizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(10));
-    panelSizer->AddStretchSpacer(1);
-    panel->SetSizer(panelSizer);
-    panel->Layout();
-}
-
-void MyFrame::SetupStarAnimation() {
-    auto* starAnimation = new wxAnimationCtrl(this, wxID_ANY, wxNullAnimation,
-                                              FromDIP(wxPoint(AppConfig::STAR_AREA_X, AppConfig::STAR_AREA_Y)),
-                                              FromDIP(wxSize(AppConfig::STAR_AREA_WIDTH, AppConfig::STAR_AREA_HEIGHT)));
-    wxAnimation animation;
-    if (animation.LoadFile("assets/stars.gif", wxANIMATION_TYPE_GIF)) {
-        starAnimation->SetAnimation(animation);
-        starAnimation->Play();
-    } else {
-        wxLogError("Failed to load star animation!");
-    }
-}
-
-void MyFrame::SetupMoonImage(const MoonInfo& info) {
-    auto it = m_moonPhaseBitmaps.find(info.phase);
-    if (it == m_moonPhaseBitmaps.end()) {
-        wxLogMessage("No moon image for phase: %s", info.phase);
-        return;
-    }
-
-    const wxBitmap& moonBitmap = it->second;
-
-    constexpr int MOON_IMG_WIDTH = 200;
-    constexpr int MOON_IMG_HEIGHT = 200;
-
-    const int moonX = AppConfig::STAR_AREA_X + (AppConfig::STAR_AREA_WIDTH - MOON_IMG_WIDTH) / 2;
-    const int moonY = AppConfig::STAR_AREA_Y + (AppConfig::STAR_AREA_HEIGHT - MOON_IMG_HEIGHT) / 2;
-
-    new wxStaticBitmap(this, wxID_ANY, moonBitmap,
-                       FromDIP(wxPoint(moonX, moonY)),
-                       FromDIP(wxSize(MOON_IMG_WIDTH, MOON_IMG_HEIGHT)));
-}
-
-void MyFrame::SetupCustomChrome() {
-    // FIX: Pass the transparency style directly to the constructor
-    auto* dragAreaPanel = new wxPanel(this, wxID_ANY,
-                                      FromDIP(wxPoint(0, 0)),
-                                      FromDIP(wxSize(AppConfig::EXIT_BUTTON_X, AppConfig::DRAG_AREA_HEIGHT)),
-                                      wxBG_STYLE_TRANSPARENT);
-                                      
-    dragAreaPanel->Bind(wxEVT_LEFT_DOWN, &MyFrame::OnDragBegin, this);
-    dragAreaPanel->Bind(wxEVT_MOTION, &MyFrame::OnDragMove, this);
-    
-    this->Bind(wxEVT_LEFT_UP, &MyFrame::OnDragEnd, this);
-
-    auto* exitButton = new wxBitmapButton(this, wxID_EXIT, m_bitmaps["exit"],
-                                          FromDIP(wxPoint(AppConfig::EXIT_BUTTON_X, AppConfig::EXIT_BUTTON_Y)),
-                                          FromDIP(wxSize(AppConfig::EXIT_BUTTON_WIDTH, AppConfig::EXIT_BUTTON_HEIGHT)),
-                                          wxBORDER_NONE | wxBU_EXACTFIT);
-
-    if (m_bitmaps.count("exit_hover")) {
-        exitButton->SetBitmapHover(m_bitmaps["exit_hover"]);
-    }
-    exitButton->Bind(wxEVT_BUTTON, &MyFrame::OnCloseButton, this);
-}
-
-void MyFrame::OnPaint(wxPaintEvent& event) {
-    wxPaintDC dc(this);
-    if (m_scaledBackground.IsOk()) {
-        dc.DrawBitmap(m_scaledBackground, 0, 0, true);
-    } else {
-        dc.SetBrush(*wxBLACK_BRUSH);
-        dc.DrawRectangle(GetClientRect());
-    }
-    event.Skip(); 
-}
-
-void MyFrame::OnDragBegin(wxMouseEvent& event) {
-    CaptureMouse();
-    m_dragStartPos = ClientToScreen(event.GetPosition()) - GetPosition();
-}
-
-void MyFrame::OnDragMove(wxMouseEvent& event) {
-    if (HasCapture() && event.Dragging() && event.LeftIsDown()) {
-        Move(ClientToScreen(event.GetPosition()) - m_dragStartPos);
-    }
-}
-
-void MyFrame::OnDragEnd(wxMouseEvent& event) {
-    if (HasCapture()) {
-        ReleaseMouse();
-    }
-    event.Skip();
-}
-
-void MyFrame::OnCloseButton(wxCommandEvent& event) {
-    Close(true);
+    ImGui::SFML::Shutdown();
+    return 0;
 }

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.14)
 project(MoonApp CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -6,35 +6,65 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Force dynamic linking for all dependencies
+set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries" FORCE)
+
+# Create dependencies management structure
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/dependencies)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/sfml)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/imgui-sfml)
+
+# Add dependencies directory
+add_subdirectory(dependencies)
+
 include_directories(src)
 
+# Add OpenSSL and libnova
 add_compile_definitions(CPPHTTPLIB_OPENSSL_SUPPORT)
 
 find_package(Libnova QUIET)
 find_package(OpenSSL REQUIRED)
-find_package(wxWidgets COMPONENTS core base gl REQUIRED)
 
-if(Libnova_FOUND) # This check is still valid if a FindLibnova.cmake module *is* found (even if not a config file)
-    message(STATUS "Found Libnova via find_package. Using its definitions.")
+if(Libnova_FOUND)
+    message(STATUS "Found Libnova via find_package.")
     set(LIBNOVA_INCLUDE_DIR "${Libnova_INCLUDE_DIRS}")
     set(LIBNOVA_LIBRARY "${Libnova_LIBRARIES}")
 else()
-    message(STATUS "Libnova not found via find_package. Attempting manual search.")
-    find_path(LIBNOVA_INCLUDE_DIR NAMES libnova/lunar.h libnova/transform.h) # Rely on CMake's default search paths
-    find_library(LIBNOVA_LIBRARY NAMES nova libnova) # Rely on CMake's default search paths
-
+    find_path(LIBNOVA_INCLUDE_DIR NAMES libnova/lunar.h libnova/transform.h)
+    find_library(LIBNOVA_LIBRARY NAMES nova libnova)
     if(NOT LIBNOVA_INCLUDE_DIR)
-        message(FATAL_ERROR "libnova headers not found. Please ensure libnova is installed correctly.")
+        message(FATAL_ERROR "libnova headers not found.")
     endif()
     if(NOT LIBNOVA_LIBRARY)
-        message(FATAL_ERROR "libnova library not found. Please ensure libnova is installed correctly.")
+        message(FATAL_ERROR "libnova library not found.")
     endif()
 endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}")
 
 add_executable(tsuki src/tsuki.cpp)
-target_compile_definitions(tsuki PRIVATE ${wxWidgets_DEFINITIONS})
-target_include_directories(tsuki PRIVATE ${LIBNOVA_INCLUDE_DIR} ${wxWidgets_INCLUDE_DIRS})
-target_link_libraries(tsuki PRIVATE ${LIBNOVA_LIBRARY} OpenSSL::SSL OpenSSL::Crypto ${wxWidgets_LIBRARIES})
+target_include_directories(tsuki PRIVATE
+    ${LIBNOVA_INCLUDE_DIR}
+    ${OPENSSL_INCLUDE_DIR}
+)
+
+# Link dependencies
+target_link_libraries(tsuki PRIVATE
+    ${LIBNOVA_LIBRARY}
+    OpenSSL::SSL
+    OpenSSL::Crypto
+    ImGui-SFML::ImGui-SFML
+)
+
 target_compile_options(tsuki PRIVATE -Wall -Wextra -Wpedantic -g)
+
+# Windows DLL copy for dynamic linking
+if(WIN32 AND BUILD_SHARED_LIBS)
+    add_custom_command(TARGET tsuki POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:ImGui-SFML::ImGui-SFML>
+            $<TARGET_FILE:sfml-graphics>
+            $<TARGET_FILE:sfml-window>
+            $<TARGET_FILE:sfml-system>
+            $<TARGET_FILE_DIR:tsuki>)
+endif()
