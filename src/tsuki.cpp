@@ -174,9 +174,12 @@ bool MyApp::OnInit() {
 
 MyFrame::MyFrame(const wxString& title)
     : wxFrame(nullptr, wxID_ANY, title, wxDefaultPosition,
-              wxSize(FromDIP(AppConfig::FRAME_WIDTH), FromDIP(AppConfig::FRAME_HEIGHT)),
-              wxFRAME_NO_TASKBAR | wxNO_BORDER) {
+              wxSize(AppConfig::FRAME_WIDTH, AppConfig::FRAME_HEIGHT),
+              wxFRAME_NO_TASKBAR | wxNO_BORDER)
+{
+    SetSize(FromDIP(wxSize(AppConfig::FRAME_WIDTH, AppConfig::FRAME_HEIGHT)));
     SetMinClientSize(FromDIP(wxSize(AppConfig::FRAME_WIDTH, AppConfig::FRAME_HEIGHT)));
+
     LoadAssets();
     PrepareBackground();
     SetupUI();
@@ -256,9 +259,11 @@ void MyFrame::SetupFont() {
 }
 
 void MyFrame::SetupMoonInfoPanel(const MoonInfo& info) {
+    // FIX: Pass the transparency style directly to the constructor
     auto* panel = new wxPanel(this, wxID_ANY,
                               FromDIP(wxPoint(AppConfig::INFO_PANEL_X, AppConfig::INFO_PANEL_Y)),
-                              FromDIP(wxSize(AppConfig::INFO_PANEL_WIDTH, AppConfig::INFO_PANEL_HEIGHT)));
+                              FromDIP(wxSize(AppConfig::INFO_PANEL_WIDTH, AppConfig::INFO_PANEL_HEIGHT)),
+                              wxTAB_TRAVERSAL | wxBG_STYLE_TRANSPARENT);
 
     const long textStyle = wxST_NO_AUTORESIZE | wxBG_STYLE_TRANSPARENT;
     wxStaticText* illuminationText = new wxStaticText(panel, wxID_ANY, "Illumination: " + info.illumination + "%", wxDefaultPosition, wxDefaultSize, textStyle);
@@ -320,9 +325,12 @@ void MyFrame::SetupMoonImage(const MoonInfo& info) {
 }
 
 void MyFrame::SetupCustomChrome() {
+    // FIX: Pass the transparency style directly to the constructor
     auto* dragAreaPanel = new wxPanel(this, wxID_ANY,
                                       FromDIP(wxPoint(0, 0)),
-                                      FromDIP(wxSize(AppConfig::EXIT_BUTTON_X, AppConfig::DRAG_AREA_HEIGHT)));
+                                      FromDIP(wxSize(AppConfig::EXIT_BUTTON_X, AppConfig::DRAG_AREA_HEIGHT)),
+                                      wxBG_STYLE_TRANSPARENT);
+                                      
     dragAreaPanel->Bind(wxEVT_LEFT_DOWN, &MyFrame::OnDragBegin, this);
     dragAreaPanel->Bind(wxEVT_MOTION, &MyFrame::OnDragMove, this);
     

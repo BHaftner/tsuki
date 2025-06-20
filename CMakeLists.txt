@@ -14,22 +14,14 @@ find_package(Libnova QUIET)
 find_package(OpenSSL REQUIRED)
 find_package(wxWidgets COMPONENTS core base gl REQUIRED)
 
-if(Libnova_FOUND)
+if(Libnova_FOUND) # This check is still valid if a FindLibnova.cmake module *is* found (even if not a config file)
     message(STATUS "Found Libnova via find_package. Using its definitions.")
-    # Libnova::Libnova is a common target name for found packages
     set(LIBNOVA_INCLUDE_DIR "${Libnova_INCLUDE_DIRS}")
     set(LIBNOVA_LIBRARY "${Libnova_LIBRARIES}")
 else()
     message(STATUS "Libnova not found via find_package. Attempting manual search.")
-    # Option 2: Manual search for headers and library (more robust for basic installs)
-    find_path(LIBNOVA_INCLUDE_DIR NAMES libnova/lunar.h libnova/transform.h
-              PATHS /usr/include /usr/local/include
-              NO_CMAKE_SYSTEM_PATH # Don't search default system paths if you know it's not there
-              )
-    find_library(LIBNOVA_LIBRARY NAMES nova libnova
-                 PATHS /usr/lib /usr/local/lib
-                 NO_CMAKE_SYSTEM_PATH # Same here
-                 )
+    find_path(LIBNOVA_INCLUDE_DIR NAMES libnova/lunar.h libnova/transform.h) # Rely on CMake's default search paths
+    find_library(LIBNOVA_LIBRARY NAMES nova libnova) # Rely on CMake's default search paths
 
     if(NOT LIBNOVA_INCLUDE_DIR)
         message(FATAL_ERROR "libnova headers not found. Please ensure libnova is installed correctly.")
