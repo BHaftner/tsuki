@@ -1,7 +1,5 @@
 #include <iostream>
 #include <string>
-#include <sstream>
-#include <iomanip>
 #include <utility>
 #include <optional>
 #include <vector>
@@ -13,18 +11,11 @@
 #include "SFML/Graphics/Texture.hpp"
 #include "SFML/System/Vector2.hpp"
 #include "SFML/Window/Mouse.hpp"
-#include "httplib.h"
-#include "json.hpp"
-#include <libnova/julian_day.h>
-#include <libnova/ln_types.h>
-#include <libnova/lunar.h>
-#include <libnova/rise_set.h>
 #include "imgui.h"
 #include "imgui-SFML.h"
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
-
-using json = nlohmann::json;
+#include <MoonInfo.cpp>
 
 class FrameAnimator : public sf::Drawable {
 public:
@@ -95,7 +86,6 @@ private:
 namespace AppConfig {
     constexpr int FRAME_WIDTH = 400;
     constexpr int FRAME_HEIGHT = 600;
-    constexpr int DRAG_AREA_HEIGHT = 60;
     constexpr int EXIT_BUTTON_X = 328;
     constexpr int EXIT_BUTTON_Y = 0;
     constexpr int STAR_AREA_X = 12;
@@ -104,93 +94,9 @@ namespace AppConfig {
     constexpr int STAR_AREA_HEIGHT = 344;
     constexpr int INFO_PANEL_X = 12;
     constexpr int INFO_PANEL_Y = 433;
-    constexpr int INFO_PANEL_WIDTH = 375;
-    constexpr int INFO_PANEL_HEIGHT = 155;
+    //constexpr int INFO_PANEL_WIDTH = 375;
+    //constexpr int INFO_PANEL_HEIGHT = 155;
 }
-
-std::string militaryToStandard(const ln_zonedate& time) {
-    int hour = time.hours;
-    std::string ampm = (hour >= 12) ? "pm" : "am";
-
-    if (hour == 0) {
-        hour = 12;
-    } else if (hour > 12) {
-        hour -= 12;
-    }
-
-    std::stringstream ss;
-    ss << hour << ":" << std::setw(2) << std::setfill('0') << time.minutes << ampm;
-    return ss.str();
-}
-
-class MoonInfo {
-public:
-    std::string phase;
-    std::string illumination;
-    std::string riseTimeString;
-    std::string setTimeString;
-
-    MoonInfo() {
-        const double julianDay = ln_get_julian_from_sys();
-        const auto userCoords = fetchCoordinates();
-
-        calculatePhaseAndIllumination(julianDay);
-        calculateRiseAndSetTimes(julianDay, userCoords);
-    }
-
-private:
-    [[nodiscard]] std::pair<double, double> fetchCoordinates() {
-        httplib::Client cli("http://ip-api.com");
-        auto res = cli.Get("/json/");
-        if (res && res->status == 200) {
-            try {
-                json data = json::parse(res->body);
-                return {data["lon"].get<double>(), data["lat"].get<double>()};
-            } catch (const json::exception& e) {
-                std::cerr << "JSON parsing failed: " << e.what() << std::endl;
-            }
-        }
-        return {0.0, 0.0};
-    }
-
-    void calculatePhaseAndIllumination(double julianDay) {
-        const double illumValue = ln_get_lunar_disk(julianDay);
-        std::stringstream ss;
-        ss << std::fixed << std::setprecision(1) << (illumValue * 100.0);
-        illumination = ss.str();
-
-        constexpr double LUNAR_PHASE_TIME_DELTA = 0.0020833333;
-        const bool isWaxing = ln_get_lunar_disk(julianDay + LUNAR_PHASE_TIME_DELTA) > illumValue;
-
-        constexpr double NEW_MOON_MAX = 0.02;
-        constexpr double CRESCENT_MAX = 0.49;
-        constexpr double QUARTER_MAX = 0.51;
-        constexpr double GIBBOUS_MAX = 0.97;
-
-        if (illumValue < NEW_MOON_MAX)       phase = "New";
-        else if (illumValue < CRESCENT_MAX)  phase = isWaxing ? "Waxing Crescent" : "Waning Crescent";
-        else if (illumValue < QUARTER_MAX)   phase = isWaxing ? "First Quarter" : "Last Quarter";
-        else if (illumValue < GIBBOUS_MAX)   phase = isWaxing ? "Waxing Gibbous" : "Waning Gibbous";
-        else                                 phase = "Full";
-    }
-
-    void calculateRiseAndSetTimes(double julianDay, const std::pair<double, double>& userCoords) {
-        ln_lnlat_posn observerCoords = {userCoords.first, userCoords.second};
-        ln_rst_time rst;
-
-        if (ln_get_lunar_rst(julianDay, &observerCoords, &rst) == 0) {
-            ln_zonedate localRise{}, localSet{};
-            ln_get_local_date(rst.rise, &localRise);
-            ln_get_local_date(rst.set, &localSet);
-
-            riseTimeString = militaryToStandard(localRise);
-            setTimeString = militaryToStandard(localSet);
-        } else {
-            riseTimeString = "N/A";
-            setTimeString = "N/A";
-        }
-    }
-};
 
 int main() {
     sf::RenderWindow window(sf::VideoMode({AppConfig::FRAME_WIDTH, AppConfig::FRAME_HEIGHT}), "MoonInformation", sf::Style::None);
