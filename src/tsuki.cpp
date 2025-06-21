@@ -11,6 +11,7 @@
 #include "SFML/Graphics/Texture.hpp"
 #include "SFML/System/Vector2.hpp"
 #include "SFML/Window/Mouse.hpp"
+#include "SFML/Window/VideoMode.hpp"
 #include "imgui-SFML.h"
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
@@ -101,6 +102,11 @@ int main() {
     sf::RenderWindow window(sf::VideoMode({AppConfig::FRAME_WIDTH, AppConfig::FRAME_HEIGHT}), "MoonInformation", sf::Style::None);
     window.setFramerateLimit(60);
 
+    sf::VideoMode desktopMode = sf::VideoMode::getDesktopMode();
+    int windowX = (desktopMode.size.x - AppConfig::FRAME_WIDTH) / 2;
+    int windowY = (desktopMode.size.y - AppConfig::FRAME_HEIGHT) / 2;
+    window.setPosition({windowX, windowY});
+
     if (!ImGui::SFML::Init(window)) {
         std::cout << "Failed to initialize window." << std::endl;
     }
@@ -190,7 +196,7 @@ int main() {
 
     sf::Clock deltaClock;
 
-    sf::Vector2i dragOffset; // offset from window corner when dragging starts
+    sf::Vector2i dragOffset;
     bool draggingWindow = false;
 
     const sf::IntRect draggableArea({0, 0}, {AppConfig::FRAME_WIDTH, 60});
