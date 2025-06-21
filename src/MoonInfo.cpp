@@ -1,3 +1,5 @@
+#define _USE_MATH_DEFINES
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -80,57 +82,6 @@ double getJulianDay(const std::tm& utc_tm) {
     return floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + (hour / 24.0) + B - 1524.5;
 }
 
-std::tm julianDayToUtcTime(double JD) {
-    double Z = floor(JD + 0.5);
-    double F = (JD + 0.5) - Z;
-
-    double A;
-    if (Z < 2299161) {
-        A = Z;
-    } else {
-        double alpha = floor((Z - 1867216.25) / 36524.25);
-        A = Z + 1 + alpha - floor(alpha / 4.0);
-    }
-
-    double B = A + 1524;
-    double C = floor((B - 122.1) / 365.25);
-    double D = floor(365.25 * C);
-    double E = floor((B - D) / 30.6001);
-
-    double day_fraction = B - D - floor(30.6001 * E) + F;
-
-    int day = static_cast<int>(floor(day_fraction));
-    double hour_fraction = day_fraction - day;
-    int hour = static_cast<int>(floor(hour_fraction * 24.0));
-    int minute = static_cast<int>(floor(fmod(hour_fraction * 24.0 * 60.0, 60.0)));
-    int second = static_cast<int>(floor(fmod(hour_fraction * 24.0 * 3600.0, 60.0)));
-
-    int month = static_cast<int>(floor(E - 1));
-    if (E < 14) {
-        month = static_cast<int>(E - 1);
-    } else {
-        month = static_cast<int>(E - 13);
-    }
-
-    int year = static_cast<int>(C - 4716);
-    if (month > 2) {
-        year = static_cast<int>(C - 4716);
-    } else {
-        year = static_cast<int>(C - 4715);
-    }
-    
-    std::tm utc_tm = {};
-    utc_tm.tm_year = year - 1900;
-    utc_tm.tm_mon = month - 1;
-    utc_tm.tm_mday = day;
-    utc_tm.tm_hour = hour;
-    utc_tm.tm_min = minute;
-    utc_tm.tm_sec = second;
-    utc_tm.tm_isdst = 0;
-
-    return utc_tm;
-}
-
 std::string militaryToStandard(const std::tm& local_tm) {
     std::stringstream ss;
     int hour = local_tm.tm_hour;
@@ -149,8 +100,6 @@ std::string militaryToStandard(const std::tm& local_tm) {
 }
 
 std::tm convertJdUtcToLocalTm(double JD_utc) {
-    std::tm utc_tm = julianDayToUtcTime(JD_utc);
-
     double seconds_since_epoch = (JD_utc - 2440587.5) * 86400.0;
     std::time_t tt_utc = static_cast<std::time_t>(seconds_since_epoch);
 

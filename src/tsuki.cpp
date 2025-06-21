@@ -11,7 +11,6 @@
 #include "SFML/Graphics/Texture.hpp"
 #include "SFML/System/Vector2.hpp"
 #include "SFML/Window/Mouse.hpp"
-#include "imgui.h"
 #include "imgui-SFML.h"
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
@@ -102,7 +101,9 @@ int main() {
     sf::RenderWindow window(sf::VideoMode({AppConfig::FRAME_WIDTH, AppConfig::FRAME_HEIGHT}), "MoonInformation", sf::Style::None);
     window.setFramerateLimit(60);
 
-    ImGui::SFML::Init(window);
+    if (!ImGui::SFML::Init(window)) {
+        std::cout << "Failed to initialize window." << std::endl;
+    }
 
     sf::Texture backgroundTexture;
     if (!backgroundTexture.loadFromFile("assets/background.png")) {

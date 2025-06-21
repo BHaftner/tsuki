@@ -23,21 +23,31 @@ find_package(OpenSSL REQUIRED)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}")
 
 # Add MoonInfo.cpp to the executable sources
-add_executable(tsuki
+# Use the WIN32 keyword here for Windows GUI applications
+add_executable(tsuki WIN32
     src/tsuki.cpp
-    src/MoonInfo.cpp # Add MoonInfo.cpp here
+    src/MoonInfo.cpp
 )
 
 target_include_directories(tsuki PRIVATE
     ${OPENSSL_INCLUDE_DIR}
 )
 
-# Link dependencies
+# Link common dependencies
 target_link_libraries(tsuki PRIVATE
     OpenSSL::SSL
     OpenSSL::Crypto
     ImGui-SFML::ImGui-SFML
 )
+
+# Link platform-specific libraries
+if(WIN32)
+    target_link_libraries(tsuki PRIVATE
+        ws2_32      # For Winsock functions
+        iphlpapi    # For IP Helper functions
+        crypt32     # For Windows Certificate Store functions
+    )
+endif()
 
 target_compile_options(tsuki PRIVATE -Wall -Wextra -Wpedantic -g)
 
