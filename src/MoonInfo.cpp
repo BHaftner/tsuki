@@ -354,7 +354,7 @@ private:
 
         std::stringstream ss;
         ss << std::fixed << std::setprecision(1) << (illum_fraction * 100.0);
-        illumination = ss.str() + "%";
+        illumination = ss.str();
 
         const double LUNAR_PHASE_TIME_DELTA = 3.0 / (24.0 * 60.0);
 
