@@ -190,14 +190,33 @@ int main() {
 
     sf::Clock deltaClock;
 
+    sf::Vector2i dragOffset; // offset from window corner when dragging starts
+    bool draggingWindow = false;
+
+    const sf::IntRect draggableArea({0, 0}, {AppConfig::FRAME_WIDTH, 60});
+
+
     while (window.isOpen()) {
         while (const std::optional<sf::Event> event = window.pollEvent()) {
-            ImGui::SFML::ProcessEvent(window, *event);
+        ImGui::SFML::ProcessEvent(window, *event);
 
-            if (event->is<sf::Event::Closed>()) {
-                window.close();
+        if (event->is<sf::Event::Closed>()) {
+            window.close();
+        }
+        else if (const auto* mouseButtonPressed = event->getIf<sf::Event::MouseButtonPressed>()) {
+            if (mouseButtonPressed->button == sf::Mouse::Button::Left) {
+                if (draggableArea.contains({mouseButtonPressed->position.x, mouseButtonPressed->position.y})) {
+                    draggingWindow = true;
+                    dragOffset = sf::Mouse::getPosition() - window.getPosition();
+                }
             }
         }
+        else if (const auto* mouseButtonReleased = event->getIf<sf::Event::MouseButtonReleased>()) {
+            if (mouseButtonReleased->button == sf::Mouse::Button::Left) {
+                draggingWindow = false;
+            }
+        }
+    }
 
         sf::Vector2f mouseWorld = window.mapPixelToCoords(sf::Mouse::getPosition(window));
 
@@ -205,6 +224,11 @@ int main() {
         exitSprite.setTexture(mouseOverExit ? exitHoverTexture : exitTexture);
         if (mouseOverExit && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
             window.close();
+        }
+
+        if (draggingWindow) {
+            sf::Vector2i newPosition = sf::Mouse::getPosition() - dragOffset;
+            window.setPosition(newPosition);
         }
     
         ImGui::SFML::Update(window, deltaClock.restart());
