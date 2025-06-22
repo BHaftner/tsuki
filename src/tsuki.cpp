@@ -12,7 +12,6 @@
 #include "SFML/System/Vector2.hpp"
 #include "SFML/Window/Mouse.hpp"
 #include "SFML/Window/VideoMode.hpp"
-#include "imgui-SFML.h"
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include <MoonInfo.cpp>
@@ -75,19 +74,19 @@ private:
         }
     }
 
-    std::optional<sf::Sprite>  m_sprite;
-    std::vector<sf::Texture>   m_textures;
-    size_t                     m_currentFrame = 0;
-    sf::Time                   m_frameDuration;
-    sf::Clock                  m_frameClock;
+    std::optional<sf::Sprite>   m_sprite;
+    std::vector<sf::Texture>    m_textures;
+    size_t                      m_currentFrame = 0;
+    sf::Time                    m_frameDuration;
+    sf::Clock                   m_frameClock;
 };
 
 
 namespace AppConfig {
     constexpr int FRAME_WIDTH = 400;
     constexpr int FRAME_HEIGHT = 600;
-    constexpr int EXIT_BUTTON_X = 328;
-    constexpr int EXIT_BUTTON_Y = 0;
+    constexpr int EXIT_BUTTON_X = 340;
+    constexpr int EXIT_BUTTON_Y = 12;
     constexpr int STAR_AREA_X = 12;
     constexpr int STAR_AREA_Y = 77;
     constexpr int STAR_AREA_WIDTH = 376;
@@ -99,17 +98,13 @@ namespace AppConfig {
 }
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode({AppConfig::FRAME_WIDTH, AppConfig::FRAME_HEIGHT}), "MoonInformation", sf::Style::None);
+    sf::RenderWindow window(sf::VideoMode({AppConfig::FRAME_WIDTH, AppConfig::FRAME_HEIGHT}), "Tsuki", sf::Style::None);
     window.setFramerateLimit(60);
 
     sf::VideoMode desktopMode = sf::VideoMode::getDesktopMode();
     int windowX = (desktopMode.size.x - AppConfig::FRAME_WIDTH) / 2;
     int windowY = (desktopMode.size.y - AppConfig::FRAME_HEIGHT) / 2;
     window.setPosition({windowX, windowY});
-
-    if (!ImGui::SFML::Init(window)) {
-        std::cout << "Failed to initialize window." << std::endl;
-    }
 
     sf::Texture backgroundTexture;
     if (!backgroundTexture.loadFromFile("assets/background.png")) {
@@ -186,15 +181,13 @@ int main() {
     
     sf::Text text(font);
     text.setString(
-        "  Illumination: " + moonInfo.illumination + "%\n" +
+        "   Illumination: " + moonInfo.illumination + "%\n" +
         "Phase: " + moonInfo.phase + "\n" +
         "   Moonrise: " + moonInfo.riseTimeString + "\n" +
         "   Moonset: " + moonInfo.setTimeString);
     text.setCharacterSize(35);
     text.setFillColor(sf::Color::Yellow);
     text.setPosition({AppConfig::INFO_PANEL_X + 65, AppConfig::INFO_PANEL_Y + 5});
-
-    sf::Clock deltaClock;
 
     sf::Vector2i dragOffset;
     bool draggingWindow = false;
@@ -204,7 +197,6 @@ int main() {
 
     while (window.isOpen()) {
         while (const std::optional<sf::Event> event = window.pollEvent()) {
-        ImGui::SFML::ProcessEvent(window, *event);
 
         if (event->is<sf::Event::Closed>()) {
             window.close();
@@ -237,7 +229,6 @@ int main() {
             window.setPosition(newPosition);
         }
     
-        ImGui::SFML::Update(window, deltaClock.restart());
         starAnimation.update(); 
 
         window.clear();
@@ -249,10 +240,8 @@ int main() {
         window.draw(moonSprite);
         window.draw(text);
 
-        ImGui::SFML::Render(window);
         window.display();
     }
 
-    ImGui::SFML::Shutdown();
     return 0;
 }

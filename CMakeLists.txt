@@ -8,11 +8,23 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries" FORCE)
 
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/dependencies)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/sfml)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/imgui-sfml)
+include(FetchContent)
 
-add_subdirectory(dependencies)
+# Fetch SFML 3
+FetchContent_Declare(
+    sfml
+    GIT_REPOSITORY https://github.com/SFML/SFML.git
+    GIT_TAG 3.0.1  # Latest stable release
+    GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(sfml)
+
+set(SFML_BUILD_AUDIO OFF CACHE BOOL "Build SFML audio module" FORCE)
+set(SFML_BUILD_NETWORK OFF CACHE BOOL "Build SFML network module" FORCE)
+set(SFML_BUILD_EXAMPLES OFF CACHE BOOL "Build SFML examples" FORCE)
+set(SFML_BUILD_DOC OFF CACHE BOOL "Build SFML documentation" FORCE)
+
 
 include_directories(src)
 
@@ -22,8 +34,6 @@ find_package(OpenSSL REQUIRED)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}")
 
-# Add MoonInfo.cpp to the executable sources
-# Use the WIN32 keyword here for Windows GUI applications
 add_executable(tsuki WIN32
     src/tsuki.cpp
     src/MoonInfo.cpp
@@ -33,14 +43,15 @@ target_include_directories(tsuki PRIVATE
     ${OPENSSL_INCLUDE_DIR}
 )
 
-# Link common dependencies
 target_link_libraries(tsuki PRIVATE
     OpenSSL::SSL
     OpenSSL::Crypto
-    ImGui-SFML::ImGui-SFML
+    # Link SFML targets directly
+    SFML::Graphics
+    SFML::Window
+    SFML::System
 )
 
-# Link platform-specific libraries
 if(WIN32)
     target_link_libraries(tsuki PRIVATE
         ws2_32      # For Winsock functions
@@ -54,7 +65,6 @@ target_compile_options(tsuki PRIVATE -Wall -Wextra -Wpedantic -g)
 if(WIN32 AND BUILD_SHARED_LIBS)
     add_custom_command(TARGET tsuki POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE:ImGui-SFML::ImGui-SFML>
             $<TARGET_FILE:sfml-graphics>
             $<TARGET_FILE:sfml-window>
             $<TARGET_FILE:sfml-system>
