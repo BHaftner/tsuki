@@ -73,9 +73,9 @@ Make sure you have Git installed (via your package manager or from [https://git-
 
 ### Final Notes and Picture
 
-Everything should have hopefully compiled and you should fine a tsuki executable in the projects root directory. It should hopefully run without any issues :)
+Everything should have hopefully compiled and you should now have an executable in the projects root directory. It hopefully runs without any issues :)
 
-A really fun project to work on. I plan to keep expanding it where I can! If anyone has any questions, feedback, or problems feel free to contact me at brockhaftner@gmail.com
+A really fun project to work on, I plan to keep expanding it where I can! If anyone has any questions, feedback, or problems feel free to contact me at brockhaftner@gmail.com
 
 Cheers!
 
