@@ -1,12 +1,12 @@
 # Tsuki - 🌙 Live Moon Tracking Application
 
-**Tsuki** is a desktop application that calculates and displays various pieces of lunar information based on your approximate longitude and latitude coordinates. This information is then beautifully rendered using custom-made pixel art.
+**Tsuki** is a desktop application that calculates and displays various pieces of lunar information based on your approximate longitude and latitude coordinates. This information is then rendered using custom-made pixel art.
 
 ## ✨ How It Works
 
-1.  **Geolocation**: Your approximate longitude and latitude coordinates are retrieved through a simple HTTPS request to `https://ip-api.com`.
+1.  **Geolocation**: Your longitude and latitude coordinates are retrieved through a simple HTTPS request to `https://ip-api.com`.
 2.  **Lunar Calculations**: Using these retrieved coordinates and your system's current time, `MoonInfo.cpp` calculates the moon's illumination, phase, and your local moonset/moonrise times. These calculations are performed using an ephemeris model of the moon.
-3.  **Graphical Display**: All the calculated data is then visualized on your screen using custom-made pixel art, powered by SFML to ensuring cross-platform compatibility.
+3.  **Graphical Display**: All the calculated data is then visualized on your screen using custom-made pixel art, powered by SFML to ensure cross-platform compatibility.
 
 ---
 
