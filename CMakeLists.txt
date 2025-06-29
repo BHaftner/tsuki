@@ -20,7 +20,6 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(sfml)
 
-set(SFML_BUILD_AUDIO OFF CACHE BOOL "Build SFML audio module" FORCE)
 set(SFML_BUILD_NETWORK OFF CACHE BOOL "Build SFML network module" FORCE)
 set(SFML_BUILD_EXAMPLES OFF CACHE BOOL "Build SFML examples" FORCE)
 set(SFML_BUILD_DOC OFF CACHE BOOL "Build SFML documentation" FORCE)
@@ -39,6 +38,7 @@ add_executable(tsuki WIN32
 target_link_libraries(tsuki PRIVATE
     SFML::Graphics
     SFML::Window
+    SFML::Audio
     SFML::System
 )
 
@@ -50,5 +50,6 @@ if(WIN32 AND BUILD_SHARED_LIBS)
             $<TARGET_FILE:sfml-graphics>
             $<TARGET_FILE:sfml-window>
             $<TARGET_FILE:sfml-system>
+            $<TARGET_FILE::sfml-audio>
             $<TARGET_FILE_DIR:tsuki>)
 endif()

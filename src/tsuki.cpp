@@ -19,6 +19,7 @@
 #include "SFML/Window/Mouse.hpp"
 #include "SFML/Window/VideoMode.hpp"
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <SFML/Window.hpp>
 #include <MoonInfo.cpp>
 
@@ -445,6 +446,12 @@ int main() {
     searchHighlight.setPosition({75, 158});
     int cityResults = 0;
 
+    sf::SoundBuffer buffer;
+        if (!buffer.loadFromFile("assets/click.wav")) {
+            return -1;
+        }
+    sf::Sound clickSound(buffer);
+
     while (window.isOpen()) {
         sf::Vector2f mouseWorld = window.mapPixelToCoords(sf::Mouse::getPosition(window));
 
@@ -552,12 +559,14 @@ int main() {
                     sf::Vector2f clickPosition = window.mapPixelToCoords({mouseButtonReleased->position.x, mouseButtonReleased->position.y});
 
                     if (exitSprite.getGlobalBounds().contains(clickPosition)) {
+                        clickSound.play();
                         window.close();
                     }
 
                     switch (state) {
                         case AppState::MainView:
                             if (globeSprite.getGlobalBounds().contains(clickPosition)) {
+                                clickSound.play();
                                 state = AppState::SearchView;
                                 searchInputString.clear();
                                 searchInputText.setString("");
@@ -567,10 +576,12 @@ int main() {
                             break;
                         case AppState::SearchView:
                             if (backSprite.getGlobalBounds().contains(clickPosition)) {
+                                clickSound.play();
                                 state = AppState::MainView;
                             } else {
                                 for (const auto& pair : searchResults) {
                                     if (pair.first.getGlobalBounds().contains(clickPosition)) {
+                                        clickSound.play();
                                         const City& selectedCity = pair.second;
                                         lat = selectedCity.latitude;
                                         lng = selectedCity.longitude;
