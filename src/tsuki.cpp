@@ -6,6 +6,7 @@
 #include <vector>
 #include <map>
 
+#include "SFML/Graphics/RectangleShape.hpp"
 #include "SFML/System/String.hpp"
 #include "simdjson.h"
 #include "SFML/Graphics/Color.hpp"
@@ -174,7 +175,7 @@ void updateSearchResults(const std::string& query, const std::vector<City>& allC
     }
 
     unsigned int maxResults = 15;
-    float startY = AppConfig::SEARCH_BAR_Y + 70;
+    float startY = AppConfig::SEARCH_BAR_Y + 67.5;
     float lineSpacing = 27.0f;
 
     for (const auto& city : allCities) {
@@ -404,9 +405,80 @@ int main() {
 
     updateMoonDisplay(moonInfo, moonTexture, moonSprite, text, phaseToFilename);
 
+    sf::RectangleShape searchHighlight({286, 27.466});
+    searchHighlight.setFillColor(sf::Color(251,65,65));
+    searchHighlight.setPosition({75, 158});
+    int cityResults = 0;
 
     while (window.isOpen()) {
         sf::Vector2f mouseWorld = window.mapPixelToCoords(sf::Mouse::getPosition(window));
+
+        if (mouseWorld.y >= 158 && mouseWorld.y <= 569) {
+            int locationOffset = (double)((mouseWorld.y - 158) / 27.466666667);
+
+            switch (locationOffset) {
+                case (0):
+                if (1 > cityResults) break;
+                searchHighlight.setPosition({75, 158});
+                break;
+                case (1):
+                if (2 > cityResults) break;
+                searchHighlight.setPosition({75, 185.46666667});
+                break;
+                case (2):
+                if (3 > cityResults) break;
+                searchHighlight.setPosition({75, 212.93333333});
+                break;
+                case (3):
+                if (4 > cityResults) break;
+                searchHighlight.setPosition({75, 240.4});
+                break;
+                case (4):
+                if (5 > cityResults) break;
+                searchHighlight.setPosition({75, 267.86666667});
+                break;
+                case (5):
+                if (6 > cityResults) break;
+                searchHighlight.setPosition({75, 295.333333333});
+                break;
+                case (6):
+                if (7 > cityResults) break;
+                searchHighlight.setPosition({75, 322.8});
+                break;
+                case (7):
+                if (8 > cityResults) break;
+                searchHighlight.setPosition({75, 350.26666667});
+                break;
+                case (8):
+                if (9 > cityResults) break;
+                searchHighlight.setPosition({75, 377.733333333});
+                break;
+                case (9):
+                if (10 > cityResults) break;
+                searchHighlight.setPosition({75, 405.2});
+                break;
+                case (10):
+                if (11 > cityResults) break;
+                searchHighlight.setPosition({75, 432.66666667});
+                break;
+                case (11):
+                if (12 > cityResults) break;
+                searchHighlight.setPosition({75, 460.1333333});
+                break;
+                case (12):
+                if (13 > cityResults) break;
+                searchHighlight.setPosition({75, 487.6});
+                break;
+                case (13):
+                if (14 > cityResults) break;
+                searchHighlight.setPosition({75, 515.06666667});
+                break;
+                case (14):
+                if (15 > cityResults) break;
+                searchHighlight.setPosition({75, 542.5333333});
+                break;
+            }
+        }
 
         bool mouseOverGlobe = globeSprite.getGlobalBounds().contains(mouseWorld);
         bool mouseOverBack = backSprite.getGlobalBounds().contains(mouseWorld);
@@ -424,6 +496,8 @@ int main() {
                         }
                         searchInputText.setString(sf::String::fromUtf8(searchInputString.begin(), searchInputString.end()));
                         updateSearchResults(searchInputString, allCities, searchResults, font); // Pass searchResults
+                        searchHighlight.setPosition({75, 158});
+                        cityResults = searchResults.size();
                     }
                 }
             }
@@ -453,6 +527,7 @@ int main() {
                                 searchInputString.clear();
                                 searchInputText.setString("");
                                 searchResults.clear();
+                                cityResults = 0;
                             }
                             break;
                         case AppState::SearchView:
@@ -507,6 +582,7 @@ int main() {
                 window.draw(searchSprite);
                 window.draw(exitSprite);
                 window.draw(backSprite);
+                if (cityResults != 0) window.draw(searchHighlight);
                 window.draw(searchInputText);
                 for (const auto& pair : searchResults) {
                     window.draw(pair.first);
