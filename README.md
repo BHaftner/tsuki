@@ -1,4 +1,4 @@
-S# Tsuki - 🌙 Live Moon Tracking Application
+## Tsuki - 🌙 Live Moon Tracking Application
 
 **Tsuki** is a desktop application that calculates and displays various pieces of lunar information based on your approximate longitude and latitude coordinates. This information is then rendered using custom-made pixel art.
 
