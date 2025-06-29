@@ -28,10 +28,6 @@ set(SFML_BUILD_DOC OFF CACHE BOOL "Build SFML documentation" FORCE)
 
 include_directories(src)
 
-add_compile_definitions(CPPHTTPLIB_OPENSSL_SUPPORT)
-
-find_package(OpenSSL REQUIRED)
-
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}")
 
 add_executable(tsuki WIN32
@@ -40,26 +36,11 @@ add_executable(tsuki WIN32
     src/simdjson.cpp
 )
 
-target_include_directories(tsuki PRIVATE
-    ${OPENSSL_INCLUDE_DIR}
-)
-
 target_link_libraries(tsuki PRIVATE
-    OpenSSL::SSL
-    OpenSSL::Crypto
-    # Link SFML targets directly
     SFML::Graphics
     SFML::Window
     SFML::System
 )
-
-if(WIN32)
-    target_link_libraries(tsuki PRIVATE
-        ws2_32      # For Winsock functions
-        iphlpapi    # For IP Helper functions
-        crypt32     # For Windows Certificate Store functions
-    )
-endif()
 
 target_compile_options(tsuki PRIVATE -Wall -Wextra -Wpedantic -g -O3 -finput-charset=UTF-8 -fexec-charset=UTF-8)
 
