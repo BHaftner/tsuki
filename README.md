@@ -14,6 +14,8 @@ S# Tsuki - 🌙 Live Moon Tracking Application
 
 **Forewarning**: This application was primarily built and tested on a Linux machine, making Linux the easiest environment for setup. I have also performed some testing and refinement for Windows, so it should work there as well. However, I do not have a macOS environment to test on, so I cannot guarantee the success of the installation steps for macOS.
 
+There are statically linked releases for Windows and Linux. This is easiest setup if you have no interest in the codebase or anything!!!
+
 ### Prerequisites
 
 You'll need to install **CMake**.
