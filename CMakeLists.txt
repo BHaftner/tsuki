@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 project(MoonApp CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -37,6 +37,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}")
 add_executable(tsuki WIN32
     src/tsuki.cpp
     src/MoonInfo.cpp
+    src/simdjson.cpp
 )
 
 target_include_directories(tsuki PRIVATE
@@ -60,7 +61,7 @@ if(WIN32)
     )
 endif()
 
-target_compile_options(tsuki PRIVATE -Wall -Wextra -Wpedantic -g)
+target_compile_options(tsuki PRIVATE -Wall -Wextra -Wpedantic -g -O3 -finput-charset=UTF-8 -fexec-charset=UTF-8)
 
 if(WIN32 AND BUILD_SHARED_LIBS)
     add_custom_command(TARGET tsuki POST_BUILD
