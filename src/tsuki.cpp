@@ -4,6 +4,7 @@
 #include <utility>
 #include <optional>
 #include <vector>
+#include <fstream>
 #include <map>
 
 #include "SFML/Graphics/RectangleShape.hpp"
@@ -334,8 +335,47 @@ int main() {
     starAnimation.setPosition(AppConfig::STAR_AREA_X, AppConfig::STAR_AREA_Y);
     starAnimation.setSize(AppConfig::STAR_AREA_WIDTH, AppConfig::STAR_AREA_HEIGHT);
 
-    double lat = 50.271790;
-    double lng = -119.276505;
+    sf::Font font;
+    if (!font.openFromFile("assets/Pixellari.ttf")) {
+        std::cout << "Failed to load font.";
+    }
+
+    sf::Text cityText(font);
+    cityText.setCharacterSize(20);
+    cityText.setFillColor(sf::Color::Yellow);
+
+    double lat = 0, lng = 0;
+
+    std::ifstream inFile("location.txt");
+    if (!inFile.is_open()) {
+        std::ofstream outFile("location.txt");
+        outFile << "McMurdo Station" << "\n";
+        outFile << "-77.846323" << "\n";
+        outFile << "166.668235";
+        outFile.close();
+        inFile.clear();
+        inFile.open("location.txt");
+    }
+    std::string line;
+    int i = 0;
+    while(std::getline(inFile, line)) {
+        switch (i) {
+            case 0:
+                cityText.setString(line);
+                break;
+            case 1:
+                lat = std::stod(line);
+                break;
+            case 2:
+                lng = std::stod(line);
+        }
+        i++;
+        if (i > 2) break;
+    }
+    inFile.close();
+    sf::FloatRect textRect = cityText.getLocalBounds();
+    cityText.setPosition({200 - (textRect.size.x / 2), 76.5});
+
     MoonInfo moonInfo(lat, lng);
 
     const std::map<std::string, std::string> phaseToFilename = {
@@ -373,11 +413,6 @@ int main() {
         AppConfig::STAR_AREA_X + (AppConfig::STAR_AREA_WIDTH / 2.f),
         AppConfig::STAR_AREA_Y + (AppConfig::STAR_AREA_HEIGHT / 2.f)
     });
-
-    sf::Font font;
-    if (!font.openFromFile("assets/Pixellari.ttf")) {
-        std::cout << "Failed to load font.";
-    }
 
     std::string searchInputString;
     sf::Text searchInputText(font);
@@ -540,9 +575,20 @@ int main() {
                                         lat = selectedCity.latitude;
                                         lng = selectedCity.longitude;
 
+                                        cityText.setString(selectedCity.name);
+                                        textRect = cityText.getLocalBounds();
+                                        cityText.setPosition({200 - (textRect.size.x / 2), 76.5});
+
                                         moonInfo = MoonInfo(lat, lng);
                                         updateMoonDisplay(moonInfo, moonTexture, moonSprite, text, phaseToFilename);
                                         state = AppState::MainView;
+
+                                        std::ofstream outFile("location.txt");
+                                        outFile << selectedCity.name << "\n";
+                                        outFile << selectedCity.latitude << "\n";
+                                        outFile << selectedCity.longitude;
+                                        outFile.close();
+
                                         searchInputString.clear();
                                         searchInputText.setString("");
                                         searchResults.clear();
@@ -571,10 +617,11 @@ int main() {
 
         switch (state) {
             case AppState::MainView:
+                window.draw(starAnimation);
                 window.draw(backgroundSprite);
+                window.draw(cityText);
                 window.draw(exitSprite);
                 window.draw(globeSprite);
-                window.draw(starAnimation);
                 window.draw(moonSprite);
                 window.draw(text);
                 break;
