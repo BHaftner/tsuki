@@ -173,7 +173,7 @@ void updateSearchResults(const std::string& query, const std::vector<City>& allC
         }
     }
 
-    unsigned int maxResults = 11;
+    unsigned int maxResults = 15;
     float startY = AppConfig::SEARCH_BAR_Y + 70;
     float lineSpacing = 27.0f;
 
@@ -206,8 +206,8 @@ void updateSearchResults(const std::string& query, const std::vector<City>& allC
 
                 std::string cityInfo = city.name + ", " + city.admin + ", " + city.country;
                 int length = cityInfo.length();
-                if (length > 23) {
-                    cityInfo.erase(23, length - 23);
+                if (length > 21) {
+                    cityInfo.erase(21, length - 21);
                     cityInfo += "...";
                 }
 
