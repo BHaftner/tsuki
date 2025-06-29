@@ -50,6 +50,6 @@ if(WIN32 AND BUILD_SHARED_LIBS)
             $<TARGET_FILE:sfml-graphics>
             $<TARGET_FILE:sfml-window>
             $<TARGET_FILE:sfml-system>
-            $<TARGET_FILE::sfml-audio>
+            $<TARGET_FILE:sfml-audio>
             $<TARGET_FILE_DIR:tsuki>)
 endif()
