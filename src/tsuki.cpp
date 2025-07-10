@@ -384,7 +384,7 @@ int main() {
         {"Waxing Crescent", "assets/waxing_crescent.png"},
         {"First Quarter",   "assets/first_quarter.png"},
         {"Waxing Gibbous",  "assets/waxing_gibbous.png"},
-        {"Full",            "assets/full_moon.png"},
+        {"Full Moon",            "assets/full_moon.png"},
         {"Waning Gibbous",  "assets/waning_gibbous.png"},
         {"Last Quarter",    "assets/last_quarter.png"},
         {"Waning Crescent", "assets/waning_crescent.png"}
